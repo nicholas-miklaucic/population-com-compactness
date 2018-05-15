@@ -1,0 +1,4 @@
+* Get publishing-quality pictures
+* Citations
+** APA citations
+** Cite software that I use (~scikit~, ~pandas~, ~geopandas~, etc.)

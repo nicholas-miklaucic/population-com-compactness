@@ -1,0 +1,66 @@
+* Data Structure Input
+/points/, an nx2 matrix of electoral block centroids (x, y)
+/pop/, an nx1 matrix/vector of electoral block populations that matches up with /points/
+
+Output:
+/districts/, another nx1 matrix/vector of integers 1-k that partitions /points/ into k districts.
+* Distances
+Everything will be using a Lambert Conic Conformal projection, centered around North Carolina for
+optimal accuracy. This should ensure that deformations in distance are negligible at the level of a
+single congressional district. This is a standard projection used and standardized in 1983 by the US
+Government.
+* Optimization Problem
+** Introduction
+The problem of trying to minimize the compactness can be simplified by treating the problem as
+discrete at the census block level and approximating blocks with their centroid, turning the problem
+into a clustering problem where our metric is minimal population-weighted squared distance to the
+center. However, the requirement that the size of districts be almost equal adds another layer, even
+different from the same problem with an exact size requirement. We can call this a /size-constrained
+k-means problem/.
+** Size Constraints 
+As held in /Wesberry v. Sanders/, in US Congressional districts the population of each one must be "as
+equal as possible". However, state legislature districts are less demanding (a 10% margin between
+districts is acceptable), and so it is desirable to be able to control the extent to which the
+algorithm controls for district size equality.
+
+Therefore, the algorithm treats the district population constraint as follows:
+
+A plan is said to /satisfy equal population constraints/ if, for all districts $D_{i}$ with population
+$P(D_{i})$, where $T$ is the total state population and $n$ is the number of districts, we have
+$$\left|1 - \frac{nP(D_{i})}{T}\right| \le \epsilon$$
+
+for some $0 < \epsilon < 1$. This does not exactly match the standard usually employed in courts (which
+compares the largest district to the smallest), but it has useful computational advantages and gives
+us fine-grained control over the district size constraints in a manageable way that will become
+important.
+** Contiguity
+If a generated plan is not contiguous (that is, a district has two tracts or blocks in it that have
+no connecting path through the district), it cannot be used per the legal standards of
+redistricting. Thus, it is important to consider, if a possible optimization algorithm generates
+discontiguous districts, how to efficiently reshape the plan into one with contiguous districts.
+
+The proposed solution is as follows:
+ - For each discontiguous district, find each separate region and number them. Take the largest one
+   by population and keep it: label all other districts for reorganization.
+ - For each tract in a district to be reorganized, find the neighboring tracts that are not going to
+   be reorganized (which can be done for at least some of them at the start). 
+ - If a neighboring tract is part of a district that borders the home district, exchange tracts to
+   achieve the minimal new score under the size constraint metrics.
+ - Repeat until contiguous.
+* Proposed Algorithm: Size-Elastic K-Means Clustering
+/Elastic/ here refers to the idea of giving import to size constraints that varies with the size
+imbalance up to a point, much in the same way a spring or rubber band stretches.
+
+The algorithm proceeds as follows:
+ - Using a preferred k-means clustering algorithm, with population-weighted distances, select $n$
+   points that define the $n$ districts chosen.
+ - For each point that must be assigned, going in random order:
+
+Call the distances to the $n$ centers $d_{1}, \dots, d_{n}$. Choose the district $D_{}_{i}$ that minimizes the
+cost function 
+$$C(D_{i}) = \alpha d_{n} - \beta \ln }\left(\left|\left|1 - \frac{nP(D_{i})}{T}\right| - \epsilon\right|\right)$$
+
+The idea of the cost function is to penalize creating a size imbalance early on in such a way as to
+prevent major costs later, but to also asymptotically increase the importance of size equality as
+the limits are reached to ensure that they are not. $\alpha$, $\beta$, and the order of points optimized are
+all hyperparameters. It still remains to determine good real-world heuristic allocations of them.
