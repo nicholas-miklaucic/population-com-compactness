@@ -24,9 +24,8 @@ class AssignmentAlg:
         n_points = points.shape[0]
         n_centers = centers.shape[0]
         # add one to avoid taking log of 0
-        max_pop = np.ceil(np.sum(pops) / n_centers) + 1
-        order = np.arange(points.shape[0])
-        np.random.shuffle(order)
+        max_pop = np.ceil(np.sum(pops) / n_centers) + 1        
+        order = np.argsort(np.apply_along_axis(self.nearest, 1, points, centers))
         # to store district assignments
         assignments = np.zeros_like(order)
         # to store district populations
@@ -38,22 +37,26 @@ class AssignmentAlg:
             # increase population in cluster by one after assignment
             pops[assignment] += 1
         return assignments
+    def nearest(self, point, others):
+        """Finds the smallest distance between the given point and given list of other points."""
+        return np.min(np.sum((others - point) ** 2, axis=1))
     def population_com(self, points, pops):
         """Computes the population-weighted center of mass for points with populations."""
         return np.average(points, axis=0, weights=pops)
-    def optimize(self, points, pops, centers, alpha, beta, gamma=0.8, n_iter=10):
-        """Given a set of points, their populations, and cluster centers, repeatedly assigns the
-        points to clusters and then resets the centers, hoping to achieve an optimal assignment.
-        Alpha and beta are proximity and capacity sensitivity weights, but they change for more
-        efficient optimization: the given values are only the initials, over time they weight more
-        towards capacity as controlled by gamma, which lies between 0 and 1."""
+    def optimize(self, points, pops, centers, alpha, beta, gamma=0.8, n_iter=100):
+        """Given a set of points, their populations, and cluster centers, repeatedly assigns the points to
+        clusters and then resets the centers, hoping to achieve an optimal assignment.  Alpha and
+        beta are proximity and capacity sensitivity weights, but they change for more efficient
+        optimization: the given values are only the initials, over time they weight more towards
+        distance as controlled by gamma, which lies between 0 and 1.
+        """
         assignments = self.assign(points, pops, centers, alpha, beta)
         new_alpha = alpha
         new_beta = beta
         for i in range(n_iter-1):  # already assigned once
             # compute alpha and beta for this run
-            new_alpha *= gamma
-            new_beta /= gamma
+            new_alpha /= gamma
+            new_beta *= gamma
             # compute new centers
             new_centers = np.array([self.population_com(points[assignments == d], pops[assignments == d])
                                     for d in range(centers.shape[0])])

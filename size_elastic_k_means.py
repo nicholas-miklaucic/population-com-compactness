@@ -17,7 +17,7 @@ blocks["x"] = blocks["geometry"].x
 blocks["y"] = blocks["geometry"].y
 
 pop_blocks = blocks[blocks["POP10"] > 0].copy()
-pop_blocks = pop_blocks[::100]  # reduce the amount of time it takes to run this
+pop_blocks = pop_blocks[::500]  # reduce the amount of time it takes to run this
 
 points = pop_blocks[["x", "y"]].as_matrix()
 # normalize distances by constant factor so that the max values in any dimension is 1, preserving
@@ -41,7 +41,7 @@ pop_blocks.plot(ax=ax, column="kmeans", categorical=True,
                 cmap="tab20", legend=True, figsize=(20, 10))
 
 ax2 = fig.add_subplot("312")
-pop_blocks["new"] = alg.optimize(points, pop_blocks["POP10"], centers, 10, 10)
+pop_blocks["new"] = alg.optimize(points, pop_blocks["POP10"], centers, 10, 1000)
 pop_blocks.plot(ax=ax2, column="new", categorical=True,
                 cmap="tab20", legend=True, figsize=(20, 10))
 
