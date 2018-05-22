@@ -1,0 +1,40 @@
+\documentclass[12pt, draft]{article}
+
+\begin{document}
+\title{A Population-Based Measure for District Compactness, Explored in North Carolina}
+\author{Nicholas Miklaucic}
+\date{May 2018}
+\maketitle
+
+\section{Introduction}
+Gerrymandering in America has significant political effects, and efforts to mitigate partisan
+gerrymandering have been hindered by the lack of consensus on effective quantification of the
+problem.
+
+This paper will focus on compactness as a measure of gerrymandering: using district shape rather
+than election data to quantify the extent to which natural divisions of a state have been eschewed
+in favor of politically-expedient shapes. This approach identifies with a common ``I know it when I
+see it'' approach to gerrymandering in public discourse on the subject.
+
+For example, the post-2010 Census NC congressional district plan, which was struck down for racial
+gerrymandering in \textit{Cooper v. Harris}, drew incredulity for the shape of its 1st and 12th
+districts. The 1st was described as ``akin to a Rorschach ink blot'' by one district resident.
+
+This paper proposes and expounds on a relatively novel compactness measure based on population
+distribution within districts that attempts to accurately measure the extent to which natural
+communities of interest have been distorted for political or racial gain. The optimization of this
+algorithm for a state is then explored, and through new techniques effective heuristic optimizations
+of this measure result in proposed districting plans that are then compared with the existing and
+prior ones using other compactness measures.
+
+\section{The Measure: Population-Weighted Center of Mass Proximity}
+Define a discrete collection of $n$ voter groups $B = \{b_1, b_2, \cdots, b_n\}$, each with a location
+and a population. (In reality, these are likely to represent census blocks or some other unit of
+data, and it is assumed that $n$ is large enough that the approximation of assuming each of these
+units is grouped entirely at the centroid is negligible.)
+
+We define a \textbf{districting plan} with $k$ districts as an assignment of each block $b_i$ to a
+district $D_1, D_2, \cdots, D_k$. 
+
+
+\end{document}
