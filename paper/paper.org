@@ -1,0 +1,199 @@
+#+TITLE: A Population-Based Measure for District Compactness, Explored in North Carolina
+* Introduction
+Gerrymandering in America has significant political effects, and efforts to mitigate
+partisan gerrymandering have been hindered by the lack of consensus on effective
+quantification of the problem.
+
+This paper will focus on compactness as a measure of gerrymandering: using district shape
+rather than election data to quantify the extent to which natural divisions of a state have
+been eschewed in favor of politically-expedient shapes. This approach identifies with a
+common "I know it when I see it" approach to gerrymandering in public discourse on the
+subject.
+
+For example, the post-2010 Census NC congressional district plan, which was struck down for
+racial gerrymandering in /Cooper v. Harris/, drew incredulity for the shape of its
+1st and 12th districts. The 1st was described as ``akin to a Rorschach ink blot'' by one
+district resident.
+
+This paper proposes and expounds on a relatively novel compactness measure based on
+population distribution within districts that attempts to accurately measure the extent to
+which natural communities of interest have been distorted for political or racial gain. The
+optimization of this algorithm for a state is then explored, and through new techniques
+effective heuristic optimizations of this measure result in proposed districting plans that
+are then compared with the existing and prior ones using other compactness measures.
+
+* The Districting Problem
+Define a discrete collection of $n$ voter groups $B = \{b_1, b_2, \cdots, b_n\}$, each with a
+location $(x, y)$ and a population. (In reality, these are likely to represent census blocks or some
+other unit of data, and it is assumed that $n$ is large enough that the approximation of
+assuming each of these units is grouped entirely at the centroid is sufficiently accurate.)
+
+We define a districting plan with $k$ districts as an assignment of each block $b_i$ to a
+district $D_1, D_2, \cdots, D_k$. Several constraints on a feasible districting plan are already
+well-established: each will be considered in turn.
+** Contiguity
+49 states use /contiguity/ as a requirement: the set of all blocks in a district must
+represent a simply connected region. This is a common-sense requirement that few dispute,
+although it has no federal case establishing it as a legal standard.
+
+Contiguity comes as an issue when using computers to create optimal district maps under
+population-based compactness measures: intuitively, some census blocks have significantly
+more people than others, and so a districting plan that has mostly dense population in one
+area and a small discontiguous rural area will usually still do well under compactness
+measures. However, it is possible to tune the optimization algorithms discussed below so
+that their output is contiguous.
+** Balanced Population
+As the landmark /Baker v. Carr/, /Wesberry v. Sanders/, /Reynolds v. Sims/, and others make
+clear, districts should have as equal population as possible. In practice, this means that
+any plan such that the most and least populous districts differ by more than 1% are
+unlikely to be accepted for federal congressional districts. (State legislature districts
+are considerably laxer.) This provides the most difficulties for creating optimal district
+maps: few standard clustering algorithms apply to the special case of a fixed size.
+
+The general problem of clustering points with a size requirement, /balanced clustering/, has
+several distinct algorithms that seek to modify existing clustering algorithms to ensure
+balance. This will be discussed further below.
+** Compactness
+Compactness is considered by many states and political processes, and it also weighs
+heavily in public discourse. Names for districts like the original "Gerrymander" and the
+old Maryland's 3rd district dubbed the "Praying Mantis" all evidence a basic desire for
+district shapes to look compact. However, there are many different compactness measures
+that often disagree, and compactness is nebulous enough that no single quantification can
+be said to be standard.
+
+Nevertheless, it is important to develop compactness standards that can be rigorously
+quantified, precisely because they offer a (theoretically) objective way of ruling on the
+extent of gerrymandering in a district or state that courts can apply to instances of
+gerrymandering without fear of overt partisanship.
+* A Practicable and Meaningful Compactness Standard: Population Balance
+** Motivation
+One of the ideas behind compactness is that districts should ideally contain distinct
+/communities/ /of interest/: socio-political, economic, or other similarly-demarcated groups of
+people that share some common predisposition, value, or belief. Examples might include
+people who own homes on the beachfront: issues such as flood insurance, tourism, or
+environmental hazards may have very different positions in the general population and those
+communities.
+
+One of the ideal goals of compactness is to preserve communities of interest: ideally, as
+many groups as possible feel that they have the chance to elect a representative beholden
+to them for support.
+
+This is key: deviations from geometrical compactness rarely occur in a vacuum. As an
+example, consider North Carolina's 2012 Congressional district 12, a highly non-compact
+district by most measures. When overlaid over a map of the population of North Carolina,
+the motivation for the district becomes clear: to group together (primarily
+African-American) citizens from several distinct metropolitan areas. (This map was struck
+down in /Cooper v. Harris/ for racial gerrymandering, so this district as an example clearly
+has relevance.)
+
+Thus, a compactness measure that penalizes the /goal/ of drawing oddly-shaped districts
+rather than simply the /means/ to that goal makes sense. This is what population balance
+seeks to do: penalize distant population centers in the same district and large populations
+on the peripheries of districts.
+
+As a good example of the importance of considering population, consider the three district plans I
+will later measure compactness for, all used in North Carolina since the last census. The
+oddly-shaped 12th district in the first two maps seems strange, and only upon analyzing the
+population distribution (shown here by a dot for each census tract, sized by its population) do we
+see the underlying motivation. The 12th district, particularly in CD113, packs primarily
+African-American voters from three separate population regions together, and it was this district in
+particular that led to the plan being struck down.
+
+#+CAPTION: The CD112 districting plan, with population shown. Units are from the NAD83 NC projection as described below.
+[[../cd112pop.png]]
+#+CAPTION: The CD113 districting plan, with population shown. Units are from the NAD83 NC projection as described below. Note the shape of the 12th district is carefully calculated.
+[[../cd113pop.png]]
+#+CAPTION: The CD115 districting plan, with population shown. Units are from the NAD83 NC projection as described below. Note the 9th district includes a small section of Charlotte at its very end, so that it remains Republican but cracks Charlotteans. This is one reason why this district performs poorly in compactness relative to CD112 despite not having an odd 12th district.
+[[../cd115pop.png]]
+
+** The Measure
+Given a districting plan $D = \{D_{1}, D_{2}, \cdots, D_{k}\}$ in a state with voter groups $B = \{b_{1}, b_{2},
+\cdots, b_{n}\}$ such that each voter block $b_{j}$ has a population $p_{j}_{}$, a center $(x_{j}, y_{j})$, and a total
+area $A_{j}$, we define the /score/ of any one district in this plan, $S(D_{i})$, as follows. First, compute
+the population center of mass, $(c_{j}_{}_{}_{x}, c_{jy})$, as $$\sum_{b_{j} \in D_{i}} (x_{j}, y_{j}) \frac{p_{j}}{|D_{j}|}$$
+
+where $|D_{j}|$ is the total population in the district. The score is the total deviation from that
+center across the district: $$S(D_{i}) = \sum_{b_{j} \in D_{i}} p_{}_{j} \frac{(x_{j} - c_{jx})^{2} + (y_{j} - c_{jy})^{2}}{A_{j}}$$
+
+Now, computing the total measure of a districting plan simply involves summing these scores and
+normalizing for district area: 
+
+$$M(D) = \dfrac{\sum_{i=1}^{k} S(D_{i})}{k S(D)}$$
+
+$S(D)$ is strange notation, but it simply refers to treating the entire state as a single district
+and computing its score. This is designed for making inter-state comparisons easier, although this
+is still a significant issue with the model: states with a single large population center per
+district are inherently much easier to get a good score with than states with two or three, or not
+enough per district. The actual application of this measure in this writeup is only limited to
+comparing plans for the same state, so this issue is relatively moot.
+** Interpretation
+One issue with the measure is that its interpretation is unclear: it has no upper bound, and
+comparing different scores without context is very difficult (unlike, for example,
+Polsby-Popper). Lower is better, but besides that it's difficult to say without looking at a more
+specific example. This is what the proceeding discussion will establish.
+* Implementation and Results
+** Process
+For a map projection, I used the NAD83 standard for North Carolina, a map projection specifically
+chosen to minimize distortion for the state. I then normalized the data so that the x-axis ranged
+from 0 to 1, scaling the y-axis as appropriate to retain the scale.
+
+As the block units, I used census blocks, a simple and natural choice. To my understanding, no NC
+Congressional districts split any census block, so we can simply treat districts as partitions of
+this set. I then input three congressional plans used since the last census. The first was simply
+replaced after the census, the second was struck down in /Cooper v. Harris/ for unconstitutional
+racial gerrymandering, and the third is currently under legal attack for partisan gerrymandering but
+as of now remains in force. This gives us a useful base on which to analyze gerrymandering using an
+example that, at least in theory, is an agreed-upon example of gerrymandering.
+** Results
+The below table summarizes my results for the three districting plans: CD112, CD113, and CD115.
+| Districting Plan | Compactness Score |
+|------------------+-------------------|
+| CD112            |        0.00894266 |
+| CD113            |        0.01108608 |
+| CD115            |        0.01031374 |
+** Discussion
+Of particular note is the significant decrease in compactness from CD112 to CD113. This seems to
+indicate that, after gaining control of the state legislature (which has no checks on its ability to
+draw district maps besides the courts), and possibly the ruling in /Vieth v. Jubelirer,/ that North
+Carolina became more gerrymandered as a result. This is also supported by the courts, as mentioned
+above: CD112 was never struck down, but CD113 was in /Cooper v. Harris/ and CD115 has been ruled
+unconstitutional partisan gerrymandering by a federal court awaiting the Supreme Court's
+ruling. This suggests that, at least comparatively between plans, this measure seems to accurately
+reflect the sociopolitical changes in North Carolina and has potential, upon further development, as
+a tool for courts to apply.
+* Preliminary Optimization
+More work needs to be done in this area. Essentially, attempting to optimize this measure for a
+state is solving a balanced clustering problem with a contiguity requirement, something which no
+existing algorithms can do perfectly. Using the work Banerjee and Ghosh did in balanced /k/-means
+clustering and modifying it to work with population instead of purely points, it is possible to
+generate reasonable attempts that nonetheless are still not contiguous.
+
+#+CAPTION: A pure k-means clustering, with populations indicated above. On the bottom, a balanced version of the same clustering. Note how there are slight discontiguities: it is as of now unclear how to ensure this does not occur.
+[[../possible-plan.png]]
+
+\newpage
+
+* Works Cited
+
+Credit to Jungwoo Park, Carson Teitler, Dr. Knudson, Issac Newell, and anyone else who I worked out ideas with.
+
+Aric A. Hagberg, Daniel A. Schult and Pieter J. Swart, “Exploring network structure, dynamics, and
+function using NetworkX”, in Proceedings of the 7th Python in Science Conference (SciPy2008), Gäel
+Varoquaux, Travis Vaught, and Jarrod Millman (Eds), (Pasadena, CA USA), pp. 11–15, Aug 2008
+Banerjee, A., & Ghosh, J. (2006). Scalable Clustering Algorithms with Balancing Constraints. Data
+Mining and Knowledge Discovery, 13(3), 365–395. https://doi.org/10.1007/s10618-006-0040-z 
+
+Cooper v. Harris, 581 U. S. (2017)
+
+John D. Hunter. Matplotlib: A 2D Graphics Environment, Computing in Science & Engineering, 9, 90-95 (2007), 
+Wes McKinney. Data Structures for Statistical Computing in Python, Proceedings of the 9th Python in Science Conference
+Jones E, Oliphant E, Peterson P, et al. SciPy: Open Source Scientific Tools for Python, 2001-,
+http://www.scipy.org/ [Online; accessed 2018-05-30].
+
+Redistricting: Supreme Court upholds ruling striking down NC districts | Charlotte
+Observer. (n.d.). Retrieved May 30, 2018, from
+http://www.charlotteobserver.com/article151912142.html
+
+Shaw v. Reno, 509 U. S. 630 (1993) 
+Wesberry v. Sanders, 376 U. S. 1 (1964) 
+
